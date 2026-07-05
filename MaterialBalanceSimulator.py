@@ -6,6 +6,15 @@ from scipy.optimize import brentq
 from sklearn.linear_model import LinearRegression
 import datetime
 
+# ── Page config must be the very first Streamlit call in the script ──────────
+# Placed here at module level so it runs ONCE per session, not on every rerun
+st.set_page_config(
+    page_title="MBE Simulator | Petroleum Engineering",
+    page_icon="⛽",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # --- Fluid Property Functions ---
 
 def calculate_Bw(p, t):
@@ -102,14 +111,6 @@ def calculate_viscosity_oil(p, p_b, r_s_input, api, t, sg_g):
 # --- Main Application ---
 
 def main():
-    # ── Page config (must be first Streamlit command) ───────────────────
-    st.set_page_config(
-        page_title="MBE Simulator | Petroleum Engineering",
-        page_icon="⛽",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
-
     # ── Global matplotlib dark professional theme ────────────────────────
     plt.rcParams.update({
         'figure.facecolor': '#0d1b2a',
@@ -712,17 +713,25 @@ def main():
                     else:
                         We_term = np.zeros(n_points)
                     total_expansion = E_o_drive + m * E_g_drive + E_fw_drive + We_term
-                    oil_gas_pct = np.nan_to_num((E_o_drive / total_expansion) * 100)
-                    gas_cap_pct = np.nan_to_num((m * E_g_drive / total_expansion) * 100)
-                    rock_water_pct = np.nan_to_num((E_fw_drive / total_expansion) * 100)
-                    water_influx_pct = np.nan_to_num((We_term / total_expansion) * 100)
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    ax.stackplot(pressure_data[1:], oil_gas_pct[1:], gas_cap_pct[1:], rock_water_pct[1:], water_influx_pct[1:],
-                                 labels=['Oil & Gas', 'Gas Cap', 'Rock & Water', 'Water Influx'],
-                                 colors=['#FF9671', '#00C4B4', '#845EC2', '#FFC75F'])
-                    ax.set_xlabel('Pressure (psi)'); ax.set_ylabel('Contribution (%)')
-                    ax.set_title('Drive Mechanism Analysis'); ax.legend(); ax.grid()
-                    ax.invert_xaxis()
+                    # Clip to [0,100] and skip index 0 (expansion=0 at initial pressure)
+                    with np.errstate(divide='ignore', invalid='ignore'):
+                        oil_gas_pct    = np.clip(np.nan_to_num((E_o_drive      / total_expansion) * 100), 0, 100)
+                        gas_cap_pct    = np.clip(np.nan_to_num((m * E_g_drive  / total_expansion) * 100), 0, 100)
+                        rock_water_pct = np.clip(np.nan_to_num((E_fw_drive     / total_expansion) * 100), 0, 100)
+                        water_influx_pct = np.clip(np.nan_to_num((We_term      / total_expansion) * 100), 0, 100)
+                    plot_dates = dates.values[1:]   # use time on x-axis (always ascending)
+                    fig, ax = plt.subplots(figsize=(12, 6))
+                    ax.stackplot(plot_dates,
+                                 oil_gas_pct[1:], gas_cap_pct[1:],
+                                 rock_water_pct[1:], water_influx_pct[1:],
+                                 labels=['Oil & Dissolved Gas', 'Gas Cap Expansion',
+                                         'Rock & Water Expansion', 'Water Influx'],
+                                 colors=['#e6a817', '#38bdf8', '#a78bfa', '#34d399'],
+                                 alpha=0.85)
+                    ax.set_xlabel('Date'); ax.set_ylabel('Drive Mechanism Contribution (%)')
+                    ax.set_ylim(0, 100)
+                    ax.set_title('Drive Mechanism Analysis — Oil Reservoir')
+                    ax.legend(loc='upper right'); ax.grid(alpha=0.4)
                     st.pyplot(fig)
                 else:
                     E_g_drive = Bg_data - B_gi  # RB/SCF
@@ -734,16 +743,21 @@ def main():
                     else:
                         We_term_drive = np.zeros(n_points)
                     total_expansion_drive = E_g_drive + E_fw_drive + We_term_drive
-                    gas_exp_pct = np.nan_to_num((E_g_drive / total_expansion_drive) * 100)
-                    rock_water_pct = np.nan_to_num((E_fw_drive / total_expansion_drive) * 100)
-                    water_influx_pct = np.nan_to_num((We_term_drive / total_expansion_drive) * 100)
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    ax.stackplot(pressure_data[1:], gas_exp_pct[1:], rock_water_pct[1:], water_influx_pct[1:],
-                                 labels=['Gas Expansion', 'Rock & Fluid', 'Water Influx'],
-                                 colors=['red', 'blue', 'green'])
-                    ax.set_xlabel('Pressure (psi)'); ax.set_ylabel('Contribution (%)')
-                    ax.set_title('Drive Mechanism Analysis'); ax.legend(); ax.grid()
-                    ax.invert_xaxis()
+                    with np.errstate(divide='ignore', invalid='ignore'):
+                        gas_exp_pct      = np.clip(np.nan_to_num((E_g_drive        / total_expansion_drive) * 100), 0, 100)
+                        rock_water_pct   = np.clip(np.nan_to_num((E_fw_drive       / total_expansion_drive) * 100), 0, 100)
+                        water_influx_pct = np.clip(np.nan_to_num((We_term_drive    / total_expansion_drive) * 100), 0, 100)
+                    plot_dates = dates.values[1:]
+                    fig, ax = plt.subplots(figsize=(12, 6))
+                    ax.stackplot(plot_dates,
+                                 gas_exp_pct[1:], rock_water_pct[1:], water_influx_pct[1:],
+                                 labels=['Gas Expansion', 'Rock & Fluid Expansion', 'Water Influx'],
+                                 colors=['#38bdf8', '#a78bfa', '#34d399'],
+                                 alpha=0.85)
+                    ax.set_xlabel('Date'); ax.set_ylabel('Drive Mechanism Contribution (%)')
+                    ax.set_ylim(0, 100)
+                    ax.set_title('Drive Mechanism Analysis — Gas Reservoir')
+                    ax.legend(loc='upper right'); ax.grid(alpha=0.4)
                     st.pyplot(fig)
 
             # Step 8: Future Performance Prediction
