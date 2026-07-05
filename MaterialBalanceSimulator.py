@@ -554,21 +554,41 @@ def main():
 
             st.markdown('<div class="section-hdr"><span class="snum">2</span><h4>Fluid PVT Properties</h4></div>', unsafe_allow_html=True)
             if st.checkbox("🧪 Plot Fluid Properties"):
-                plots = (
-                    [("Rs (SCF/STB)", Rs_data), ("Bo (RB/STB)", Bo_data), ("Bg (RB/SCF)", Bg_data),
-                     ("Bw (RB/STB)", Bw_data), ("Viscosity (cP)", Viscosity_data), ("Z-factor", Z_prod)]
-                    if reservoir_type == "Oil"
-                    else [("Bg (RB/SCF)", Bg_data), ("Bw (RB/STB)", Bw_data), ("Viscosity (cp)", Viscosity_data),
-                          ("Z-factor", Z_prod)]
-                )
+                p_range = np.linspace(10, res_p, 100)
+                if reservoir_type == "Oil":
+                    plots = [
+                        ("Rs (SCF/STB)", [calculate_Rs(p, p_b, r_s_input, sg_g, api, t) for p in p_range]),
+                        ("Bo (RB/STB)", [calculate_Bo(p, p_b, r_s_input, sg_g, api, t) for p in p_range]),
+                        ("Bg (RB/SCF)", [calculate_Bg(p, sg_g, t) for p in p_range]),
+                        ("Bw (RB/STB)", [calculate_Bw(p, t) for p in p_range]),
+                        ("Viscosity (cP)", [calculate_viscosity_oil(p, p_b, r_s_input, api, t, sg_g) for p in p_range]),
+                        ("Z-factor", [compute_z(sg_g, p, t) for p in p_range])
+                    ]
+                else:
+                    plots = [
+                        ("Bg (RB/SCF)", [0.02827 * compute_z(sg_g, p, t) * (t + 460) / p for p in p_range]),
+                        ("Bw (RB/STB)", [calculate_Bw(p, t) for p in p_range]),
+                        ("Viscosity (cp)", [calculate_gas_viscosity(p, t, sg_g, compute_z(sg_g, p, t)) for p in p_range]),
+                        ("Z-factor", [compute_z(sg_g, p, t) for p in p_range])
+                    ]
                 fig, axs = plt.subplots((len(plots) + 1) // 2, 2, figsize=(12, 6 * ((len(plots) + 1) // 2)))
                 axs = axs.flatten()
                 for ax, (label, data) in zip(axs, plots):
-                    ax.plot(pressure_data, data, 'b-', label=label)
+                    # Full smooth curve over dynamic range
+                    ax.plot(p_range, data, color='#e6a817', linewidth=2, label=f'{label} (curve)')
+                    # Overlay actual observed data points from the file
                     if reservoir_type == "Oil":
-                        ax.axvline(p_b, color='r', linestyle='--', label=f'Pb: {p_b:.2f} psi')
+                        obs_map = {"Rs (SCF/STB)": Rs_data, "Bo (RB/STB)": Bo_data, "Bg (RB/SCF)": Bg_data,
+                                   "Bw (RB/STB)": Bw_data, "Viscosity (cP)": Viscosity_data, "Z-factor": Z_prod}
+                    else:
+                        obs_map = {"Bg (RB/SCF)": Bg_data, "Bw (RB/STB)": Bw_data,
+                                   "Viscosity (cp)": Viscosity_data, "Z-factor": Z_prod}
+                    if label in obs_map:
+                        ax.scatter(pressure_data, obs_map[label], color='#38bdf8', s=28, zorder=5, label='Observed data')
+                    if reservoir_type == "Oil":
+                        ax.axvline(p_b, color='#f87171', linestyle='--', linewidth=1.4, label=f'Pb = {p_b:.0f} psi')
                     ax.set_xlabel('Pressure (psi)'); ax.set_ylabel(label)
-                    ax.legend(); ax.grid()
+                    ax.legend(fontsize=8); ax.grid()
                 if len(plots) % 2:
                     fig.delaxes(axs[-1])
                 plt.tight_layout()
