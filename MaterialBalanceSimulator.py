@@ -509,7 +509,7 @@ def main():
                 B_gi = Bg_data[0]
 
             # Step 3: Option to Plot Reservoir Plots
-            st.markdown('<div class="section-hdr"><span class="snum">3</span><h4>Production History Visualization</h4></div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-hdr"><span class="snum">1</span><h4>Production History Visualization</h4></div>', unsafe_allow_html=True)
             if st.checkbox("📊 Plot Reservoir Production Data"):
                 if reservoir_type == "Oil":
                     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
@@ -551,7 +551,7 @@ def main():
                 plt.tight_layout()
                 st.pyplot(fig)
 
-            st.markdown('<div class="section-hdr"><span class="snum">4</span><h4>Fluid PVT Properties</h4></div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-hdr"><span class="snum">2</span><h4>Fluid PVT Properties</h4></div>', unsafe_allow_html=True)
             if st.checkbox("🧪 Plot Fluid Properties"):
                 plots = (
                     [("Rs (SCF/STB)", Rs_data), ("Bo (RB/STB)", Bo_data), ("Bg (RB/SCF)", Bg_data),
@@ -625,7 +625,7 @@ def main():
                 We_data = np.zeros(n_points)
 
             # Step 6: Material Balance Calculations
-            st.markdown('<div class="section-hdr"><span class="snum">6</span><h4>Material Balance Analysis</h4></div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-hdr"><span class="snum">3</span><h4>Material Balance Analysis</h4></div>', unsafe_allow_html=True)
             if st.checkbox("⚖️ Calculate Material Balance"):
                 if reservoir_type == "Oil":
                     F_data = np.zeros(n_points)
@@ -700,7 +700,7 @@ def main():
                     st.pyplot(fig)
 
             # Step 7: Drive Mechanism Analysis
-            st.markdown('<div class="section-hdr"><span class="snum">7</span><h4>Drive Mechanism Analysis</h4></div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-hdr"><span class="snum">4</span><h4>Drive Mechanism Analysis</h4></div>', unsafe_allow_html=True)
             if st.checkbox("🔩 Plot Drive Mechanism Analysis"):
                 if reservoir_type == "Oil":
                     E_o_drive = np.array([(Bo_data[i] - B_oi) + (r_s_input - Rs_data[i]) * Bg_data[i] if pressure_data[i] < p_b else Bo_data[i] - B_oi for i in range(n_points)])
@@ -747,7 +747,7 @@ def main():
                     st.pyplot(fig)
 
             # Step 8: Future Performance Prediction
-            st.markdown('<div class="section-hdr"><span class="snum">8</span><h4>Future Performance Prediction</h4></div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-hdr"><span class="snum">5</span><h4>Future Performance Prediction</h4></div>', unsafe_allow_html=True)
             if st.checkbox("🔮 Predict Future Performance"):
                 future_date_str = st.text_input("Enter Future Date (YYYY-MM-DD):")
                 if future_date_str:
